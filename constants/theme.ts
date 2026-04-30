@@ -4,10 +4,10 @@ export const PALETTE = {
   text: '#1E1E1E',
   mutedText: '#6B7280',
   border: '#E5E7EB',
-  primary: '#2F6FED',
+  primary: '#C62828',
   dangerText: '#C62828',
   lemon: '#FFF6CC',
   lemonBorder: '#F6DD79',
-  track: '#E6ECF8',
-  mutedBar: '#B9C2D6',
+  track: '#F6E3E3',
+  mutedBar: '#D8A9A9',
 } as const;

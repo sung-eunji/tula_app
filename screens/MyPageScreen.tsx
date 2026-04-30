@@ -579,7 +579,7 @@ export default function MyPageScreen({ user, onLogout, onUserUpdate, language, o
               }}
             />
             {profileNickname.trim() ? (
-              <Text style={{ color: nicknameAvailability === 'taken' ? PALETTE.dangerText : '#2F6FED', fontSize: 12 }}>
+              <Text style={{ color: nicknameAvailability === 'taken' ? PALETTE.dangerText : PALETTE.primary, fontSize: 12 }}>
                 {nicknameAvailability === 'taken'
                   ? c.nicknameTaken
                   : nicknameAvailability === 'available'
@@ -590,7 +590,7 @@ export default function MyPageScreen({ user, onLogout, onUserUpdate, language, o
               </Text>
             ) : null}
             {profileMessage ? (
-              <Text style={{ color: profileMessage === c.profileSaved ? '#2F6FED' : PALETTE.dangerText, fontSize: 12 }}>
+              <Text style={{ color: profileMessage === c.profileSaved ? PALETTE.primary : PALETTE.dangerText, fontSize: 12 }}>
                 {profileMessage}
               </Text>
             ) : null}
@@ -668,7 +668,7 @@ export default function MyPageScreen({ user, onLogout, onUserUpdate, language, o
                 </Text>
               </Pressable>
             </View>
-            <Text style={{ color: nextPasswordValidationMessage ? PALETTE.dangerText : '#2F6FED', fontSize: 12 }}>
+            <Text style={{ color: nextPasswordValidationMessage ? PALETTE.dangerText : PALETTE.primary, fontSize: 12 }}>
               {nextPasswordValidationMessage || (newPassword ? c.passwordValid : '')}
             </Text>
 
@@ -701,11 +701,11 @@ export default function MyPageScreen({ user, onLogout, onUserUpdate, language, o
             {confirmNextPasswordMessage ? (
               <Text style={{ color: PALETTE.dangerText, fontSize: 12 }}>{confirmNextPasswordMessage}</Text>
             ) : confirmNewPassword ? (
-              <Text style={{ color: '#2F6FED', fontSize: 12 }}>{c.passwordMatched}</Text>
+              <Text style={{ color: PALETTE.primary, fontSize: 12 }}>{c.passwordMatched}</Text>
             ) : null}
 
             {passwordMessage ? (
-              <Text style={{ color: passwordMessage === c.passwordChanged ? '#2F6FED' : PALETTE.dangerText, fontSize: 12 }}>
+              <Text style={{ color: passwordMessage === c.passwordChanged ? PALETTE.primary : PALETTE.dangerText, fontSize: 12 }}>
                 {passwordMessage}
               </Text>
             ) : null}
