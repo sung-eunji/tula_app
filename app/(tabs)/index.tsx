@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
 
 export default function HomeScreen() {
+  const router = useRouter();
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const logoTranslateY = useRef(new Animated.Value(24)).current;
   const logoScale = useRef(new Animated.Value(0.94)).current;
@@ -48,6 +50,9 @@ export default function HomeScreen() {
     introAnimation.start(({ finished }) => {
       if (finished) {
         floatingAnimation.start();
+        setTimeout(() => {
+          router.replace('/(tabs)/mypage');
+        }, 700);
       }
     });
 
@@ -55,7 +60,7 @@ export default function HomeScreen() {
       introAnimation.stop();
       floatingAnimation.stop();
     };
-  }, [logoOpacity, logoScale, logoTranslateY]);
+  }, [logoOpacity, logoScale, logoTranslateY, router]);
 
   return (
     <View style={styles.container}>
