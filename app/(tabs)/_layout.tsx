@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 
-import { AppStateProvider } from './_appState';
+import { AppStateProvider } from '@/providers/AppState';
 
 export default function TabsLayout() {
   return (

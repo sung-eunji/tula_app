@@ -1,6 +1,5 @@
 import ProductsScreen from '@/screens/ProductsScreen';
-
-import { useAppState } from './_appState';
+import { useAppState } from '@/providers/AppState';
 
 export default function ProductsRoute() {
   const { language, user } = useAppState();

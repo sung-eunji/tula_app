@@ -1,6 +1,5 @@
 import ScheduleScreen from '@/screens/ScheduleScreen';
-
-import { useAppState } from './_appState';
+import { useAppState } from '@/providers/AppState';
 
 export default function ScheduleRoute() {
   const { language, user } = useAppState();

@@ -1,16 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from 'react-native';
+import { useRouter } from 'expo-router';
 
 import {
   changePasswordWithCurrentPassword,
-  deleteCurrentAccount,
   fetchMembers,
   fetchSequences,
   isNicknameAvailable,
   signOut,
   updateProfile,
 } from '@/services/supabase';
-import { RELEASE_INFO } from '@/constants/release';
 import { PALETTE } from '@/constants/theme';
 import type { AppLanguage, User } from '@/types';
 import { getPasswordValidationMessage, isValidPassword } from '@/utils/auth';
@@ -225,6 +224,7 @@ function monthKey(dateString: string) {
 }
 
 export default function MyPageScreen({ user, onLogout, onUserUpdate, language, onLanguageChange }: MyPageScreenProps) {
+  const router = useRouter();
   const c = COPY[language];
   const [selectedMonth, setSelectedMonth] = useState<string>('');
   const [sequenceStatsByMonth, setSequenceStatsByMonth] = useState<Record<string, SequenceGoalStat[]>>({});
@@ -243,7 +243,6 @@ export default function MyPageScreen({ user, onLogout, onUserUpdate, language, o
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
-  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -417,57 +416,17 @@ export default function MyPageScreen({ user, onLogout, onUserUpdate, language, o
     }
   }, [c.currentPasswordRequired, c.passwordChangeError, c.passwordChanged, c.passwordMismatch, confirmNewPassword, currentPassword, newPassword, user.email]);
 
-  const openExternal = useCallback(async (url: string, missingMessage: string) => {
-    if (!url) {
-      setError(missingMessage);
-      return;
-    }
-
-    try {
-      await Linking.openURL(url);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : c.openFailed);
-    }
-  }, [c.openFailed]);
-
   const handlePrivacyPolicy = useCallback(() => {
-    void openExternal(RELEASE_INFO.privacyPolicyUrl, c.missingPrivacyPolicy);
-  }, [c.missingPrivacyPolicy, openExternal]);
+    router.push('/support/privacy');
+  }, [router]);
 
   const handleContactSupport = useCallback(() => {
-    const email = RELEASE_INFO.supportEmail.trim();
-    const body = encodeURIComponent(`App version:\nAccount email: ${user.email}\n\nMessage:\n`);
-    void openExternal(email ? `mailto:${email}?subject=Tula%20Support&body=${body}` : '', c.missingSupportEmail);
-  }, [c.missingSupportEmail, openExternal, user.email]);
+    router.push('/support/contact');
+  }, [router]);
 
   const handleAccountDeletion = useCallback(() => {
-    Alert.alert(c.deleteTitle, c.deleteMessage, [
-      { text: c.cancel, style: 'cancel' },
-      {
-        text: c.deleteConfirm,
-        style: 'destructive',
-        onPress: () => {
-          void (async () => {
-            setDeletingAccount(true);
-            setError(null);
-            try {
-              await deleteCurrentAccount();
-              Alert.alert(c.deleteTitle, c.deleteCompleted, [
-                {
-                  text: c.ok,
-                  onPress: onLogout,
-                },
-              ]);
-            } catch (e) {
-              setError(e instanceof Error ? e.message : c.deleteFailed);
-            } finally {
-              setDeletingAccount(false);
-            }
-          })();
-        },
-      },
-    ]);
-  }, [c.cancel, c.deleteCompleted, c.deleteConfirm, c.deleteFailed, c.deleteMessage, c.deleteTitle, c.ok, onLogout]);
+    router.push('/support/delete-account');
+  }, [router]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: PALETTE.page }}>
@@ -772,7 +731,6 @@ export default function MyPageScreen({ user, onLogout, onUserUpdate, language, o
 
           <Pressable
             onPress={handleAccountDeletion}
-            disabled={deletingAccount}
             style={{
               borderRadius: 12,
               borderWidth: 1,
@@ -780,11 +738,10 @@ export default function MyPageScreen({ user, onLogout, onUserUpdate, language, o
               paddingHorizontal: 14,
               paddingVertical: 12,
               backgroundColor: '#FFF4F2',
-              opacity: deletingAccount ? 0.7 : 1,
             }}
           >
             <Text style={{ color: PALETTE.dangerText, fontWeight: '700' }}>
-              {deletingAccount ? c.deleting : c.requestDeletion}
+              {c.requestDeletion}
             </Text>
           </Pressable>
         </View>

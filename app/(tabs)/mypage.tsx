@@ -1,6 +1,5 @@
 import MyPageScreen from '@/screens/MyPageScreen';
-
-import { useAppState } from './_appState';
+import { useAppState } from '@/providers/AppState';
 
 export default function MyPageRoute() {
   const { language, setLanguage, user, setUser } = useAppState();
