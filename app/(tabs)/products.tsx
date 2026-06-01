@@ -3,5 +3,6 @@ import { useAppState } from '@/providers/AppState';
 
 export default function ProductsRoute() {
   const { language, user } = useAppState();
-  return <ProductsScreen user={user!} language={language} />;
+  if (!user) return null;
+  return <ProductsScreen user={user} language={language} />;
 }

@@ -3,9 +3,10 @@ import { useAppState } from '@/providers/AppState';
 
 export default function MyPageRoute() {
   const { language, setLanguage, user, setUser } = useAppState();
+  if (!user) return null;
   return (
     <MyPageScreen
-      user={user!}
+      user={user}
       onLogout={() => setUser(null)}
       onUserUpdate={setUser}
       language={language}
