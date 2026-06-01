@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 
+import SplashLoader from '@/components/SplashLoader';
 import { AppStateProvider, useAppState } from '@/providers/AppState';
 
 function AuthGate() {
@@ -23,17 +24,27 @@ function AuthGate() {
   return null;
 }
 
+function RootLayoutInner() {
+  const { authLoading } = useAppState();
+
+  if (authLoading) return <SplashLoader />;
+
+  return (
+    <Stack>
+      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="support/privacy" options={{ title: '개인정보처리방침' }} />
+      <Stack.Screen name="support/contact" options={{ title: '문의하기' }} />
+      <Stack.Screen name="support/delete-account" options={{ title: '계정삭제요청' }} />
+    </Stack>
+  );
+}
+
 export default function RootLayout() {
   return (
     <AppStateProvider>
       <AuthGate />
-      <Stack>
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="support/privacy" options={{ title: '개인정보처리방침' }} />
-        <Stack.Screen name="support/contact" options={{ title: '문의하기' }} />
-        <Stack.Screen name="support/delete-account" options={{ title: '계정삭제요청' }} />
-      </Stack>
+      <RootLayoutInner />
     </AppStateProvider>
   );
 }
