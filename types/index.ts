@@ -7,7 +7,6 @@ export interface User {
   email: string;
   nickname?: string | null;
   gender?: UserGender | null;
-  [key: string]: unknown;
 }
 
 export interface UserProfile {
@@ -16,84 +15,78 @@ export interface UserProfile {
   nickname: string | null;
   full_name: string | null;
   gender: UserGender | null;
-  [key: string]: unknown;
 }
 
 export interface Member {
   id: string;
-  user_id?: string;
-  name?: string;
-  email?: string | null;
-  phone?: string | null;
-  note?: string | null;
-  created_at?: string;
-  [key: string]: unknown;
+  user_id: string;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  notes: string | null;
+  created_at: string;
 }
 
 export interface Product {
   id: string;
-  user_id?: string;
-  name?: string;
-  description?: string | null;
-  price?: number;
-  currency_code?: string | null;
-  total_sessions?: number | null;
-  validity_days?: number | null;
-  created_at?: string;
-  [key: string]: unknown;
+  user_id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  currency: string;
+  total_sessions: number | null;
+  validity_days: number | null;
+  is_active: boolean;
+  created_at: string;
 }
 
 export interface Membership {
   id: string;
-  user_id?: string;
-  member_id?: string;
-  product_id?: string;
-  start_date?: string;
-  end_date?: string | null;
-  remaining_sessions?: number | null;
-  created_at?: string;
-  [key: string]: unknown;
+  user_id: string;
+  member_id: string;
+  product_id: string;
+  start_date: string;
+  end_date: string | null;
+  remaining_sessions: number | null;
+  status: string;
+  created_at: string;
 }
 
 export interface ClassSession {
   id: string;
-  user_id?: string;
-  name?: string;
-  class_date?: string;
-  start_time?: string;
-  duration_minutes?: number;
-  capacity?: number | null;
-  repeat_rule?: string | null;
-  created_at?: string;
-  [key: string]: unknown;
+  user_id: string;
+  title: string;
+  class_datetime: string;
+  duration_minutes: number;
+  location: string | null;
+  capacity: number | null;
+  created_at: string;
 }
 
 export interface Attendance {
   id: string;
-  class_id?: string;
-  member_id?: string;
-  status?: string;
-  checked_at?: string;
-  created_at?: string;
-  [key: string]: unknown;
+  user_id: string;
+  class_id: string;
+  member_id: string;
+  membership_id: string | null;
+  used_session: boolean;
+  created_at: string;
 }
 
 export interface Sequence {
   id: string;
-  user_id?: string;
-  title?: string;
-  theme?: string | null;
+  user_id: string;
+  title: string;
+  theme: string | null;
   created_at: string;
-  [key: string]: unknown;
 }
 
 export interface SequencePose {
   id: string;
   sequence_id: string;
-  pose_name?: string;
-  pose_order?: number;
-  duration_seconds?: number | null;
-  [key: string]: unknown;
+  pose_name: string;
+  pose_order: number;
+  duration_seconds: number | null;
 }
 
 export interface SequenceWithPoses extends Sequence {

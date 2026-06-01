@@ -7,7 +7,9 @@ import { PALETTE } from '@/constants/theme';
 
 export default function PrivacyPolicyScreen() {
   const fallbackUrl = RELEASE_INFO.privacyPolicyUrl?.trim();
-  const localPolicyAssetUri = Asset.fromModule(require('@/docs/privacy.html')).uri;
+  const localPolicyAssetUri = Asset.fromModule(
+    require('@/docs/privacy.html'),
+  ).uri;
   const policyUri = localPolicyAssetUri || fallbackUrl;
 
   if (Platform.OS === 'web') {
@@ -24,8 +26,12 @@ export default function PrivacyPolicyScreen() {
 
   if (!policyUri) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: PALETTE.page, padding: 16 }}>
-        <Text style={{ color: PALETTE.text }}>Privacy policy URL is not configured.</Text>
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: PALETTE.page, padding: 16 }}
+      >
+        <Text style={{ color: PALETTE.text }}>
+          Privacy policy URL is not configured.
+        </Text>
       </SafeAreaView>
     );
   }
