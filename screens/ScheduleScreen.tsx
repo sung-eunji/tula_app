@@ -637,573 +637,426 @@ export default function ScheduleScreen({ user, language }: ScheduleScreenProps) 
     );
   };
 
+  const [classModalVisible, setClassModalVisible] = useState(false);
+  const [attendanceModalVisible, setAttendanceModalVisible] = useState(false);
+
+  const openClassModal = (session?: ClassSession) => {
+    if (session) startEditClass(session);
+    else resetClassForm();
+    setClassModalVisible(true);
+  };
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: PALETTE.page }}>
-      <ScrollView ref={scrollViewRef} contentContainerStyle={{ padding: 16, gap: 16 }}>
-        <View>
-          <Text style={{ fontSize: 18, fontWeight: '600', color: PALETTE.text }}>{c.title}</Text>
-          <Text style={{ color: PALETTE.mutedText, marginTop: 4 }}>
-            {c.subtitle}
-          </Text>
+    <SafeAreaView style={ss.safe}>
+      <ScrollView ref={scrollViewRef} contentContainerStyle={ss.scroll}>
+        {/* 헤더 */}
+        <View style={ss.header}>
+          <Text style={ss.eyebrow}>Schedule</Text>
+          <Text style={ss.title}>{c.title}</Text>
         </View>
 
-        <View style={{ gap: 8 }}>
-          <Text style={{ fontWeight: '600', color: PALETTE.text }}>{editingClassId ? c.editClass : c.addClass}</Text>
-          <TextInput
-            placeholder={c.className}
-            value={title}
-            onChangeText={setTitle}
-            style={{
-              borderWidth: 1,
-              borderColor: PALETTE.border,
-              borderRadius: 12,
-              padding: 8,
-            }}
-          />
-          <Pressable
-            onPress={() => openDatePicker('classDate')}
-            style={{
-              borderWidth: 1,
-              borderColor: PALETTE.border,
-              borderRadius: 12,
-              padding: 10,
-            }}
-          >
-            <Text style={{ color: classDate ? PALETTE.text : PALETTE.mutedText }}>
-              {classDate || c.selectDate}
-            </Text>
-          </Pressable>
-          <TextInput
-            placeholder={c.timeExample}
-            value={classTime}
-            onChangeText={setClassTime}
-            style={{
-              borderWidth: 1,
-              borderColor: PALETTE.border,
-              borderRadius: 12,
-              padding: 8,
-            }}
-          />
-          <View style={{ gap: 6 }}>
-            <Text style={{ color: PALETTE.mutedText }}>{c.durationSelect}</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {DURATION_OPTIONS.map((minutes) => {
-                const active = classDurationMinutes === minutes;
+        {loading && <ActivityIndicator color={PALETTE.primary} style={{ marginTop: 16 }} />}
+        {error && <Text style={ss.errorText}>{error}</Text>}
+
+        {/* 뷰 모드 토글 */}
+        <View style={ss.seg}>
+          {(['list', 'calendar'] as const).map((mode) => (
+            <Pressable key={mode} style={[ss.segBtn, classViewMode === mode && ss.segBtnOn]} onPress={() => setClassViewMode(mode)}>
+              <Text style={[ss.segBtnText, classViewMode === mode && ss.segBtnTextOn]}>{mode === 'list' ? c.list : c.calendar}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {/* 리스트 뷰 */}
+        {classViewMode === 'list' && (
+          <View style={ss.cardList}>
+            {!loading && classes.length === 0 && (
+              <View style={ss.emptyCard}><Text style={ss.emptyText}>{c.noClasses}</Text></View>
+            )}
+            {classes.map((session) => (
+              <View key={session.id} style={ss.classCard}>
+                <View style={ss.classCardRow}>
+                  {/* 시간 */}
+                  <View style={ss.timeCol}>
+                    <Text style={ss.timeText}>{getTimeFromClassDatetime(session.class_datetime)}</Text>
+                    <Text style={ss.durationText}>{session.duration_minutes ?? '-'}{c.minutesSuffix}</Text>
+                  </View>
+                  <View style={ss.divider} />
+                  {/* 내용 */}
+                  <View style={{ flex: 1 }}>
+                    <Text style={ss.classTitle}>{session.title}</Text>
+                    <Text style={ss.classMeta}>{session.location ?? '-'}</Text>
+                    <View style={ss.pillRow}>
+                      <View style={[ss.pill, ss.pillGreen]}>
+                        <Text style={[ss.pillText, ss.pillTextGreen]}>
+                          {c.attendance} {attendanceCountByClass.get(session.id) ?? 0}{session.capacity ? `/${session.capacity}` : ''}
+                        </Text>
+                      </View>
+                      {session.capacity ? (
+                        <View style={[ss.pill, ss.pillGrey]}>
+                          <Text style={[ss.pillText, ss.pillTextGrey]}>{c.capacity} {session.capacity}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  </View>
+                  {/* 액션 */}
+                  <View style={{ gap: 6 }}>
+                    <Pressable style={ss.actionBtn} onPress={() => setAttendanceModalClassId(session.id)}>
+                      <Text style={ss.actionBtnText}>{c.viewAttendance}</Text>
+                    </Pressable>
+                    <Pressable style={ss.actionBtn} onPress={() => openClassModal(session)}>
+                      <Text style={ss.actionBtnText}>{c.edit}</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* 달력 뷰 */}
+        {classViewMode === 'calendar' && (
+          <View style={ss.calCard}>
+            {/* 월 헤더 */}
+            <View style={ss.calHeader}>
+              <Text style={ss.calMonthText}>{calendarMonthCursor.getFullYear()}년 {calendarMonthCursor.getMonth() + 1}월</Text>
+              <Text style={ss.calMonthTextEn}>{calendarMonthCursor.toLocaleString('en', { month: 'long' })}</Text>
+            </View>
+            <View style={ss.calNav}>
+              <Pressable onPress={() => setCalendarMonthCursor(new Date(calendarMonthCursor.getFullYear(), calendarMonthCursor.getMonth() - 1, 1))}>
+                <Text style={ss.calNavText}>{'<'}</Text>
+              </Pressable>
+              <Pressable onPress={() => setCalendarMonthCursor(new Date(calendarMonthCursor.getFullYear(), calendarMonthCursor.getMonth() + 1, 1))}>
+                <Text style={ss.calNavText}>{'>'}</Text>
+              </Pressable>
+            </View>
+            {/* 요일 */}
+            <View style={ss.calRow}>
+              {WEEKDAY_LABELS.map((label) => (
+                <Text key={label} style={ss.calDow}>{label}</Text>
+              ))}
+            </View>
+            {/* 날짜 */}
+            <View style={ss.calGrid}>
+              {calendarDays.map((cell) => {
+                const active = cell.dateKey === selectedCalendarDate;
                 return (
-                  <Text
-                    key={minutes}
-                    onPress={() => setClassDurationMinutes(minutes)}
-                    style={{
-                      borderWidth: 1,
-                      borderColor: active ? PALETTE.primary : PALETTE.border,
-                      backgroundColor: active ? PALETTE.primary : PALETTE.card,
-                      color: active ? '#fff' : PALETTE.text,
-                      borderRadius: 16,
-                      paddingHorizontal: 10,
-                      paddingVertical: 6,
-                    }}
+                  <Pressable
+                    key={cell.key}
+                    onPress={() => { if (cell.inMonth) setSelectedCalendarDate(cell.dateKey); }}
+                    style={[ss.calCell, active && ss.calCellActive, !cell.inMonth && { opacity: 0 }]}
                   >
-                    {minutes}
-                    {c.minutesSuffix}
-                  </Text>
+                    <Text style={[ss.calCellText, active && { color: '#fff', fontWeight: '600' }]}>{cell.label}</Text>
+                    {cell.count > 0 ? <View style={[ss.calDot, active && { backgroundColor: '#fff' }]} /> : null}
+                  </Pressable>
                 );
               })}
             </View>
-          </View>
-          {!editingClassId ? (
-            <View style={{ gap: 6 }}>
-              <Text style={{ color: PALETTE.mutedText }}>{c.repeatLabel}</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {(['none', 'weekly'] as const).map((mode) => {
-                  const active = repeatMode === mode;
-                  return (
-                    <Text
-                      key={mode}
-                      onPress={() => {
-                        setRepeatMode(mode);
-                        if (mode === 'weekly' && repeatWeekdays.length === 0) {
-                          setRepeatWeekdays([getWeekdayFromDate(classDate)]);
-                          setRepeatUntilDate(addDaysToYmd(classDate, 56));
-                        }
-                      }}
-                      style={{
-                        borderWidth: 1,
-                        borderColor: active ? PALETTE.primary : PALETTE.border,
-                        backgroundColor: active ? PALETTE.primary : PALETTE.card,
-                        color: active ? '#fff' : PALETTE.text,
-                        borderRadius: 16,
-                        paddingHorizontal: 10,
-                        paddingVertical: 6,
-                      }}
-                    >
-                      {mode === 'none' ? c.repeatNone : c.repeatWeekly}
-                    </Text>
-                  );
-                })}
-              </View>
 
-              {repeatMode === 'weekly' ? (
-                <View style={{ gap: 8 }}>
-                  <Text style={{ color: PALETTE.mutedText }}>{c.repeatWeekdays}</Text>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                    {WEEKDAY_LABELS.map((label, index) => {
-                      const active = repeatWeekdays.includes(index);
-                      return (
-                        <Text
-                          key={`${label}-${index}`}
-                          onPress={() => toggleRepeatWeekday(index)}
-                          style={{
-                            borderWidth: 1,
-                            borderColor: active ? PALETTE.primary : PALETTE.border,
-                            backgroundColor: active ? PALETTE.primary : PALETTE.card,
-                            color: active ? '#fff' : PALETTE.text,
-                            borderRadius: 16,
-                            paddingHorizontal: 10,
-                            paddingVertical: 6,
-                          }}
-                        >
-                          {label}
-                        </Text>
-                      );
-                    })}
-                  </View>
-
-                  <Pressable
-                    onPress={() => openDatePicker('repeatUntilDate')}
-                    style={{
-                      borderWidth: 1,
-                      borderColor: PALETTE.border,
-                      borderRadius: 12,
-                      padding: 10,
-                    }}
-                  >
-                    <Text style={{ color: repeatUntilDate ? PALETTE.text : PALETTE.mutedText }}>
-                      {c.repeatUntil} {repeatUntilDate}
-                    </Text>
-                  </Pressable>
-                </View>
-              ) : null}
-            </View>
-          ) : null}
-          <TextInput
-            placeholder={c.locationOptional}
-            value={location}
-            onChangeText={setLocation}
-            style={{
-              borderWidth: 1,
-              borderColor: PALETTE.border,
-              borderRadius: 12,
-              padding: 8,
-            }}
-          />
-          <TextInput
-            placeholder={c.capacityOptional}
-            keyboardType="number-pad"
-            value={capacity}
-            onChangeText={setCapacity}
-            style={{
-              borderWidth: 1,
-              borderColor: PALETTE.border,
-              borderRadius: 12,
-              padding: 8,
-            }}
-          />
-          <Pressable
-            onPress={handleSaveClass}
-            disabled={saving}
-            style={{
-              backgroundColor: PALETTE.primary,
-              borderRadius: 12,
-              paddingVertical: 12,
-              alignItems: 'center',
-              opacity: saving ? 0.6 : 1,
-            }}
-          >
-            <Text style={{ color: '#fff' }}>{saving ? c.saving : editingClassId ? c.saveEdit : c.saveClass}</Text>
-          </Pressable>
-          {editingClassId ? (
-            <Pressable
-              onPress={resetClassForm}
-              disabled={saving}
-              style={{
-                backgroundColor: PALETTE.primary,
-                borderRadius: 12,
-                paddingVertical: 12,
-                alignItems: 'center',
-                opacity: saving ? 0.6 : 1,
-                marginTop: 8,
-              }}
-            >
-              <Text style={{ color: '#fff' }}>{c.cancelEdit}</Text>
-            </Pressable>
-          ) : null}
-        </View>
-
-        <View style={{ gap: 8 }}>
-          <Text style={{ fontWeight: '600', color: PALETTE.text }}>{c.attendanceCheck}</Text>
-          <Text style={{ color: PALETTE.mutedText }}>{c.step1Class}</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {classes.map((item) => {
-              const active = selectedClassId === item.id;
-              return (
-                <Text
-                  key={item.id}
-                  onPress={() => setSelectedClassId(item.id)}
-                  style={{
-                    borderWidth: 1,
-                    borderColor: active ? PALETTE.primary : PALETTE.border,
-                    backgroundColor: active ? PALETTE.primary : PALETTE.card,
-                    color: active ? '#fff' : PALETTE.text,
-                    borderRadius: 16,
-                    paddingHorizontal: 10,
-                    paddingVertical: 6,
-                  }}
-                >
-                  {item.title}
-                </Text>
-              );
-            })}
-          </View>
-
-          <Text style={{ color: PALETTE.mutedText }}>{c.step2Member}</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {members.map((item) => {
-              const active = selectedMemberIds.includes(item.id);
-              return (
-                <Text
-                  key={item.id}
-                  onPress={() => toggleSelectedMember(item.id)}
-                  style={{
-                    borderWidth: 1,
-                    borderColor: active ? PALETTE.primary : PALETTE.border,
-                    backgroundColor: active ? PALETTE.primary : PALETTE.card,
-                    color: active ? '#fff' : PALETTE.text,
-                    borderRadius: 16,
-                    paddingHorizontal: 10,
-                    paddingVertical: 6,
-                  }}
-                >
-                  {item.full_name}
-                </Text>
-              );
-            })}
-          </View>
-          <View style={{ gap: 4 }}>
-            <Text style={{ color: PALETTE.mutedText }}>{c.selectedMembership}</Text>
-            {selectedMembers.length === 0 ? (
-              <Text style={{ color: PALETTE.mutedText }}>{c.none}</Text>
-            ) : (
-              selectedMembers.map((member) => (
-                <Text key={member.id} style={{ color: PALETTE.mutedText }}>
-                  {member.full_name}: {activeMembershipByMemberId.get(member.id)?.id ?? c.none}
-                </Text>
-              ))
-            )}
-          </View>
-          <Pressable
-            onPress={handleCheckAttendance}
-            disabled={saving}
-            style={{
-              backgroundColor: PALETTE.primary,
-              borderRadius: 12,
-              paddingVertical: 12,
-              alignItems: 'center',
-              opacity: saving ? 0.6 : 1,
-            }}
-          >
-            <Text style={{ color: '#fff' }}>{saving ? c.processing : c.processAttendance}</Text>
-          </Pressable>
-        </View>
-
-        {error ? <Text style={{ color: PALETTE.dangerText }}>{error}</Text> : null}
-        {loading ? <ActivityIndicator color={PALETTE.primary} /> : null}
-
-        <View style={{ gap: 8 }}>
-          <Text style={{ fontWeight: '600', color: PALETTE.text }}>{c.registeredClasses}</Text>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            {(['list', 'calendar'] as const).map((mode) => {
-              const active = classViewMode === mode;
-              return (
-                <Text
-                  key={mode}
-                  onPress={() => setClassViewMode(mode)}
-                  style={{
-                    borderWidth: 1,
-                    borderColor: active ? PALETTE.primary : PALETTE.border,
-                    backgroundColor: active ? PALETTE.primary : PALETTE.card,
-                    color: active ? '#fff' : PALETTE.text,
-                    borderRadius: 16,
-                    paddingHorizontal: 10,
-                    paddingVertical: 6,
-                  }}
-                >
-                  {mode === 'list' ? c.list : c.calendar}
-                </Text>
-              );
-            })}
-          </View>
-          {!loading && classes.length === 0 ? (
-            <Text style={{ color: PALETTE.mutedText }}>{c.noClasses}</Text>
-          ) : null}
-
-          {classViewMode === 'list'
-            ? classes.map((session) => (
-                <View
-                  key={session.id}
-                  style={styles.classCard}
-                >
-                  <View style={styles.classCardHeader}>
-                    <Text style={styles.classCardTitle}>{session.title}</Text>
-                    <View style={styles.classCardActions}>
-                      <Pressable onPress={() => setAttendanceModalClassId(session.id)} hitSlop={8}>
-                        <Text style={{ color: PALETTE.primary, paddingVertical: 4 }}>{c.viewAttendance}</Text>
-                      </Pressable>
-                      <Pressable onPress={() => startEditClass(session)} hitSlop={8}>
-                        <Text style={{ color: PALETTE.primary, paddingVertical: 4 }}>{c.edit}</Text>
-                      </Pressable>
-                    </View>
-                  </View>
-                  <Text style={styles.classCardDatetime}>{session.class_datetime}</Text>
-                  <Text style={styles.classCardMeta}>
-                    {c.time} {session.duration_minutes ?? '-'}{c.minutesSuffix} · {c.place} {session.location ?? '-'} · {c.capacity} {session.capacity ?? '-'} ·
-                    {c.attendance} {attendanceCountByClass.get(session.id) ?? 0}
-                  </Text>
-                </View>
-              ))
-            : (
-                <View style={{ gap: 10 }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text
-                      onPress={() =>
-                        setCalendarMonthCursor(
-                          new Date(
-                            calendarMonthCursor.getFullYear(),
-                            calendarMonthCursor.getMonth() - 1,
-                            1,
-                          ),
-                        )
-                      }
-                      style={{ color: PALETTE.primary, paddingVertical: 4 }}
-                    >
-                      {c.prevMonth}
-                    </Text>
-                    <Text style={{ fontWeight: '600', color: PALETTE.text }}>{monthLabel}</Text>
-                    <Text
-                      onPress={() =>
-                        setCalendarMonthCursor(
-                          new Date(
-                            calendarMonthCursor.getFullYear(),
-                            calendarMonthCursor.getMonth() + 1,
-                            1,
-                          ),
-                        )
-                      }
-                      style={{ color: PALETTE.primary, paddingVertical: 4 }}
-                    >
-                      {c.nextMonth}
-                    </Text>
-                  </View>
-
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    {WEEKDAY_LABELS.map((label) => (
-                      <Text key={label} style={{ width: '14.2%', textAlign: 'center', color: PALETTE.mutedText }}>
-                        {label}
-                      </Text>
-                    ))}
-                  </View>
-
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                    {calendarDays.map((cell) => {
-                      const active = cell.dateKey === selectedCalendarDate;
-                      return (
-                        <Pressable
-                          key={cell.key}
-                          onPress={() => {
-                            if (cell.inMonth) setSelectedCalendarDate(cell.dateKey);
-                          }}
-                          style={{
-                            width: '14.2%',
-                            minHeight: 54,
-                            paddingVertical: 6,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            borderRadius: 8,
-                            backgroundColor: active ? PALETTE.primary : 'transparent',
-                            opacity: cell.inMonth ? 1 : 0,
-                          }}
-                        >
-                          <Text style={{ color: active ? '#fff' : PALETTE.text }}>{cell.label}</Text>
-                          {cell.count > 0 ? (
-                            <Text style={{ fontSize: 11, color: active ? '#fff' : PALETTE.mutedText }}>
-                              {cell.count}
-                              {c.countSuffix}
-                            </Text>
-                          ) : null}
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-
-                  <View style={{ gap: 6 }}>
-                    <Text style={{ fontWeight: '600', color: PALETTE.text }}>{selectedCalendarDate} {c.classesOfDate}</Text>
-                    {selectedDateClasses.length === 0 ? (
-                      <Text style={{ color: PALETTE.mutedText }}>{c.noClassesDate}</Text>
-                    ) : (
-                      selectedDateClasses.map((session) => (
-                        <View key={session.id} style={styles.classCard}>
-                          <View style={styles.classCardHeader}>
-                            <Text style={styles.classCardTitle}>{session.title}</Text>
-                            <View style={styles.classCardActions}>
-                              <Pressable onPress={() => setAttendanceModalClassId(session.id)} hitSlop={8}>
-                                <Text style={{ color: PALETTE.primary, paddingVertical: 4 }}>{c.viewAttendance}</Text>
-                              </Pressable>
-                              <Pressable onPress={() => startEditClass(session)} hitSlop={8}>
-                                <Text style={{ color: PALETTE.primary, paddingVertical: 4 }}>{c.edit}</Text>
-                              </Pressable>
-                            </View>
-                          </View>
-                          <Text style={styles.classCardDatetime}>{getTimeFromClassDatetime(session.class_datetime)}</Text>
-                          <Text style={styles.classCardMeta}>
-                            {c.time} {session.duration_minutes ?? '-'}{c.minutesSuffix} · {c.place} {session.location ?? '-'} · {c.capacity} {session.capacity ?? '-'}
-                          </Text>
-                        </View>
-                      ))
-                    )}
-                  </View>
-                </View>
-              )}
-        </View>
-
-        <CalendarDatePickerModal
-          visible={activeDateField !== null}
-          title={c.selectDate}
-          cancelLabel={c.cancel}
-          value={activeDateField === 'repeatUntilDate' ? repeatUntilDate : classDate}
-          weekdays={WEEKDAY_LABELS}
-          onClose={() => setActiveDateField(null)}
-          onSelect={(date) => {
-            if (activeDateField === 'repeatUntilDate') {
-              setRepeatUntilDate(date);
-            } else {
-              setClassDate(date);
-              if (repeatMode === 'weekly' && repeatWeekdays.length === 0) {
-                setRepeatWeekdays([getWeekdayFromDate(date)]);
-              }
-              if (repeatMode === 'weekly' && repeatUntilDate < date) {
-                setRepeatUntilDate(addDaysToYmd(date, 56));
-              }
-            }
-            setActiveDateField(null);
-          }}
-        />
-        <Modal
-          visible={attendanceModalClassId !== null}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setAttendanceModalClassId(null)}
-        >
-          <Pressable
-            onPress={() => setAttendanceModalClassId(null)}
-            style={{
-              flex: 1,
-              justifyContent: 'center',
-              backgroundColor: 'rgba(0,0,0,0.35)',
-              paddingHorizontal: 20,
-            }}
-          >
-            <Pressable
-              onPress={(event) => {
-                event.stopPropagation();
-              }}
-              style={{
-                backgroundColor: PALETTE.card,
-                borderRadius: 16,
-                padding: 16,
-                gap: 12,
-                maxHeight: '70%',
-              }}
-            >
+            {/* 선택 날짜 수업 */}
+            <View style={{ marginTop: 16, gap: 8 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View style={{ flex: 1, marginRight: 12 }}>
-                  <Text style={{ fontWeight: '600', color: PALETTE.text }}>{c.attendanceListTitle}</Text>
-                  {attendanceModalSession ? (
-                    <Text style={{ color: PALETTE.mutedText, marginTop: 4 }}>
-                      {attendanceModalSession.title} · {attendanceModalSession.class_datetime}
-                    </Text>
-                  ) : null}
-                </View>
-                <Text
-                  onPress={() => setAttendanceModalClassId(null)}
-                  style={{ color: PALETTE.mutedText, paddingVertical: 4 }}
-                >
-                  {c.close}
+                <Text style={ss.calDateTitle}>
+                  {selectedCalendarDate.slice(5).replace('-', '월 ')}일 {c.classesOfDate}
                 </Text>
+                <Text style={ss.calDateCount}>{selectedDateClasses.length}개</Text>
               </View>
-
-              <ScrollView contentContainerStyle={{ gap: 8 }}>
-                {attendanceModalRows.length === 0 ? (
-                  <Text style={{ color: PALETTE.mutedText }}>{c.noAttendanceYet}</Text>
-                ) : (
-                  attendanceModalRows.map((row) => (
-                    <View
-                      key={row.id}
-                      style={{
-                        borderWidth: 1,
-                        borderColor: PALETTE.border,
-                        borderRadius: 10,
-                        paddingHorizontal: 12,
-                        paddingVertical: 10,
-                        gap: 2,
-                      }}
-                    >
-                      <Text style={{ color: PALETTE.text, fontWeight: '600' }}>
-                        {memberById.get(row.member_id)?.full_name ?? row.member_id}
-                      </Text>
-                      <Text style={{ color: PALETTE.mutedText, fontSize: 12 }}>
-                        {row.created_at}
-                      </Text>
+              {selectedDateClasses.length === 0 ? (
+                <Text style={ss.emptyText}>{c.noClassesDate}</Text>
+              ) : (
+                selectedDateClasses.map((session) => (
+                  <View key={session.id} style={ss.classCard}>
+                    <View style={ss.classCardRow}>
+                      <View style={ss.timeCol}>
+                        <Text style={ss.timeText}>{getTimeFromClassDatetime(session.class_datetime)}</Text>
+                        <Text style={ss.durationText}>{session.duration_minutes ?? '-'}{c.minutesSuffix}</Text>
+                      </View>
+                      <View style={ss.divider} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={ss.classTitle}>{session.title}</Text>
+                        <Text style={ss.classMeta}>{session.location ?? '-'}</Text>
+                        <View style={ss.pillRow}>
+                          <View style={[ss.pill, ss.pillGreen]}>
+                            <Text style={[ss.pillText, ss.pillTextGreen]}>
+                              {c.attendance} {attendanceCountByClass.get(session.id) ?? 0}{session.capacity ? `/${session.capacity}` : ''}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                      <View style={{ gap: 6 }}>
+                        <Pressable style={ss.actionBtn} onPress={() => setAttendanceModalClassId(session.id)}>
+                          <Text style={ss.actionBtnText}>{c.viewAttendance}</Text>
+                        </Pressable>
+                        <Pressable style={ss.actionBtn} onPress={() => openClassModal(session)}>
+                          <Text style={ss.actionBtnText}>{c.edit}</Text>
+                        </Pressable>
+                      </View>
                     </View>
-                  ))
-                )}
-              </ScrollView>
-            </Pressable>
-          </Pressable>
-        </Modal>
+                  </View>
+                ))
+              )}
+            </View>
+          </View>
+        )}
       </ScrollView>
+
+      {/* FAB — 수업 추가 */}
+      <Pressable style={ss.fab} onPress={() => openClassModal()}>
+        <Text style={ss.fabText}>+</Text>
+      </Pressable>
+
+      {/* 출석 체크 버튼 */}
+      <Pressable style={ss.attendanceBtn} onPress={() => setAttendanceModalVisible(true)}>
+        <Text style={ss.attendanceBtnText}>✓</Text>
+      </Pressable>
+
+      {/* 수업 추가/수정 모달 */}
+      <Modal visible={classModalVisible} animationType="slide" transparent>
+        <View style={ss.modalOverlay}>
+          <ScrollView style={{ width: '100%' }} contentContainerStyle={ss.modalSheet} keyboardShouldPersistTaps="handled">
+            <Text style={ss.modalTitle}>{editingClassId ? c.editClass : c.addClass}</Text>
+            {error ? <Text style={ss.errorText}>{error}</Text> : null}
+
+            <TextInput placeholder={c.className} placeholderTextColor={PALETTE.mutedText} value={title} onChangeText={setTitle} style={ss.input} />
+            <Pressable style={ss.datePicker} onPress={() => openDatePicker('classDate')}>
+              <Text style={{ color: classDate ? PALETTE.text : PALETTE.mutedText }}>{classDate || c.selectDate}</Text>
+            </Pressable>
+            <TextInput placeholder={c.timeExample} placeholderTextColor={PALETTE.mutedText} value={classTime} onChangeText={setClassTime} style={ss.input} />
+
+            <Text style={ss.sectionLabel}>{c.durationSelect}</Text>
+            <View style={ss.chipRow}>
+              {DURATION_OPTIONS.map((min) => {
+                const active = classDurationMinutes === min;
+                return (
+                  <Pressable key={min} style={[ss.chip, active && ss.chipActive]} onPress={() => setClassDurationMinutes(min)}>
+                    <Text style={[ss.chipText, active && ss.chipTextActive]}>{min}{c.minutesSuffix}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {!editingClassId && (
+              <>
+                <Text style={ss.sectionLabel}>{c.repeatLabel}</Text>
+                <View style={ss.chipRow}>
+                  {(['none', 'weekly'] as const).map((mode) => {
+                    const active = repeatMode === mode;
+                    return (
+                      <Pressable key={mode} style={[ss.chip, active && ss.chipActive]}
+                        onPress={() => { setRepeatMode(mode); if (mode === 'weekly' && repeatWeekdays.length === 0) { setRepeatWeekdays([getWeekdayFromDate(classDate)]); setRepeatUntilDate(addDaysToYmd(classDate, 56)); } }}>
+                        <Text style={[ss.chipText, active && ss.chipTextActive]}>{mode === 'none' ? c.repeatNone : c.repeatWeekly}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                {repeatMode === 'weekly' && (
+                  <>
+                    <Text style={ss.sectionLabel}>{c.repeatWeekdays}</Text>
+                    <View style={ss.chipRow}>
+                      {WEEKDAY_LABELS.map((label, index) => {
+                        const active = repeatWeekdays.includes(index);
+                        return (
+                          <Pressable key={`${label}-${index}`} style={[ss.chip, active && ss.chipActive]} onPress={() => toggleRepeatWeekday(index)}>
+                            <Text style={[ss.chipText, active && ss.chipTextActive]}>{label}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                    <Pressable style={ss.datePicker} onPress={() => openDatePicker('repeatUntilDate')}>
+                      <Text style={{ color: PALETTE.text }}>{c.repeatUntil} {repeatUntilDate}</Text>
+                    </Pressable>
+                  </>
+                )}
+              </>
+            )}
+
+            <TextInput placeholder={c.locationOptional} placeholderTextColor={PALETTE.mutedText} value={location} onChangeText={setLocation} style={ss.input} />
+            <TextInput placeholder={c.capacityOptional} placeholderTextColor={PALETTE.mutedText} keyboardType="number-pad" value={capacity} onChangeText={setCapacity} style={ss.input} />
+
+            <Pressable style={[ss.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSaveClass} disabled={saving}>
+              {saving ? <ActivityIndicator color="#fff" /> : <Text style={ss.saveBtnText}>{editingClassId ? c.saveEdit : c.saveClass}</Text>}
+            </Pressable>
+            <Pressable style={ss.cancelBtn} onPress={() => { setClassModalVisible(false); resetClassForm(); setError(null); }}>
+              <Text style={ss.cancelBtnText}>{c.cancel}</Text>
+            </Pressable>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* 출석 체크 모달 */}
+      <Modal visible={attendanceModalVisible} animationType="slide" transparent>
+        <View style={ss.modalOverlay}>
+          <ScrollView style={{ width: '100%' }} contentContainerStyle={ss.modalSheet}>
+            <Text style={ss.modalTitle}>{c.attendanceCheck}</Text>
+            {error ? <Text style={ss.errorText}>{error}</Text> : null}
+
+            <Text style={ss.sectionLabel}>{c.step1Class}</Text>
+            <View style={ss.chipRow}>
+              {classes.map((item) => {
+                const active = selectedClassId === item.id;
+                return (
+                  <Pressable key={item.id} style={[ss.chip, active && ss.chipActive]} onPress={() => setSelectedClassId(item.id)}>
+                    <Text style={[ss.chipText, active && ss.chipTextActive]}>{item.title}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={ss.sectionLabel}>{c.step2Member}</Text>
+            <View style={ss.chipRow}>
+              {members.map((item) => {
+                const active = selectedMemberIds.includes(item.id);
+                return (
+                  <Pressable key={item.id} style={[ss.chip, active && ss.chipActive]} onPress={() => toggleSelectedMember(item.id)}>
+                    <Text style={[ss.chipText, active && ss.chipTextActive]}>{item.full_name}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Pressable style={[ss.saveBtn, saving && { opacity: 0.6 }]} onPress={handleCheckAttendance} disabled={saving}>
+              {saving ? <ActivityIndicator color="#fff" /> : <Text style={ss.saveBtnText}>{c.processAttendance}</Text>}
+            </Pressable>
+            <Pressable style={ss.cancelBtn} onPress={() => { setAttendanceModalVisible(false); setError(null); }}>
+              <Text style={ss.cancelBtnText}>{c.cancel}</Text>
+            </Pressable>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* 출석 명단 모달 */}
+      <Modal visible={attendanceModalClassId !== null} transparent animationType="fade" onRequestClose={() => setAttendanceModalClassId(null)}>
+        <Pressable style={ss.attendanceListOverlay} onPress={() => setAttendanceModalClassId(null)}>
+          <Pressable style={ss.attendanceListSheet} onPress={(e) => e.stopPropagation()}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={ss.modalTitle}>{c.attendanceListTitle}</Text>
+                {attendanceModalSession ? (
+                  <Text style={{ color: PALETTE.mutedText, fontSize: 13, marginTop: 2 }}>
+                    {attendanceModalSession.title} · {getTimeFromClassDatetime(attendanceModalSession.class_datetime)}
+                  </Text>
+                ) : null}
+              </View>
+              <Pressable onPress={() => setAttendanceModalClassId(null)}>
+                <Text style={{ color: PALETTE.mutedText, fontSize: 14 }}>{c.close}</Text>
+              </Pressable>
+            </View>
+            <ScrollView contentContainerStyle={{ gap: 8 }}>
+              {attendanceModalRows.length === 0 ? (
+                <Text style={ss.emptyText}>{c.noAttendanceYet}</Text>
+              ) : attendanceModalRows.map((row) => (
+                <View key={row.id} style={ss.attendanceRow}>
+                  <Text style={{ color: PALETTE.text, fontWeight: '600' }}>{memberById.get(row.member_id)?.full_name ?? row.member_id}</Text>
+                  <Text style={{ color: PALETTE.mutedText, fontSize: 12 }}>{row.created_at?.slice(0, 16)}</Text>
+                </View>
+              ))}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <CalendarDatePickerModal
+        visible={activeDateField !== null} title={c.selectDate} cancelLabel={c.cancel}
+        value={activeDateField === 'repeatUntilDate' ? repeatUntilDate : classDate}
+        weekdays={WEEKDAY_LABELS}
+        onClose={() => setActiveDateField(null)}
+        onSelect={(date) => {
+          if (activeDateField === 'repeatUntilDate') { setRepeatUntilDate(date); }
+          else {
+            setClassDate(date);
+            if (repeatMode === 'weekly' && repeatWeekdays.length === 0) setRepeatWeekdays([getWeekdayFromDate(date)]);
+            if (repeatMode === 'weekly' && repeatUntilDate < date) setRepeatUntilDate(addDaysToYmd(date, 56));
+          }
+          setActiveDateField(null);
+        }}
+      />
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const ss = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: PALETTE.page },
+  scroll: { paddingHorizontal: 22, paddingTop: 20, paddingBottom: 140 },
+  header: { marginBottom: 20 },
+  eyebrow: { fontSize: 13, color: PALETTE.accent, fontStyle: 'italic', marginBottom: 2 },
+  title: { fontSize: 30, fontWeight: '600', color: PALETTE.text, letterSpacing: -0.3 },
+  errorText: { color: PALETTE.dangerText, fontSize: 13, marginBottom: 8 },
+
+  // 뷰 토글
+  seg: { flexDirection: 'row', backgroundColor: '#F1EBE3', borderRadius: 14, padding: 4, gap: 4, marginBottom: 16 },
+  segBtn: { flex: 1, paddingVertical: 9, borderRadius: 10, alignItems: 'center' },
+  segBtnOn: { backgroundColor: '#fff', shadowColor: PALETTE.ink, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 },
+  segBtnText: { fontSize: 13, fontWeight: '600', color: PALETTE.mutedText },
+  segBtnTextOn: { color: PALETTE.primaryDark },
+
+  cardList: { gap: 12 },
   classCard: {
-    borderWidth: 1,
-    borderColor: PALETTE.border,
-    borderRadius: 14,
-    backgroundColor: PALETTE.card,
-    padding: 12,
-    gap: 6,
+    backgroundColor: PALETTE.card, borderWidth: 1, borderColor: PALETTE.border,
+    borderRadius: 22, padding: 18,
+    shadowColor: PALETTE.ink, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
   },
-  classCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  classCardTitle: {
-    flex: 1,
-    fontWeight: '600',
-    color: PALETTE.text,
-  },
-  classCardActions: {
-    flexDirection: 'row',
-    gap: 12,
-    flexWrap: 'wrap',
-  },
-  classCardDatetime: {
-    color: PALETTE.mutedText,
-  },
-  classCardMeta: {
-    color: PALETTE.mutedText,
-    lineHeight: 20,
-  },
+  classCardRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  timeCol: { width: 52, alignItems: 'center' },
+  timeText: { fontSize: 18, fontWeight: '600', color: PALETTE.primaryDark },
+  durationText: { fontSize: 10.5, color: PALETTE.mutedText, marginTop: 2 },
+  divider: { width: 1, alignSelf: 'stretch', backgroundColor: PALETTE.border },
+  classTitle: { fontSize: 15, fontWeight: '600', color: PALETTE.text },
+  classMeta: { fontSize: 12.5, color: PALETTE.mutedText, marginTop: 2 },
+  pillRow: { flexDirection: 'row', gap: 7, flexWrap: 'wrap', marginTop: 10 },
+  pill: { paddingHorizontal: 11, paddingVertical: 5, borderRadius: 999 },
+  pillText: { fontSize: 11.5, fontWeight: '600' },
+  pillGreen: { backgroundColor: PALETTE.greenSoft },
+  pillTextGreen: { color: PALETTE.primaryDark },
+  pillGrey: { backgroundColor: '#F1EBE3' },
+  pillTextGrey: { color: PALETTE.mutedText },
+  actionBtn: { backgroundColor: PALETTE.card, borderWidth: 1, borderColor: PALETTE.border, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7 },
+  actionBtnText: { fontSize: 11.5, fontWeight: '600', color: PALETTE.text },
+
+  // 달력
+  calCard: { backgroundColor: PALETTE.card, borderWidth: 1, borderColor: PALETTE.border, borderRadius: 22, padding: 16, shadowColor: PALETTE.ink, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 2 },
+  calHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  calMonthText: { fontSize: 15, fontWeight: '600', color: PALETTE.text },
+  calMonthTextEn: { fontSize: 14, color: PALETTE.accent, fontStyle: 'italic' },
+  calNav: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  calNavText: { color: PALETTE.primary, fontSize: 16, paddingVertical: 4, paddingHorizontal: 8 },
+  calRow: { flexDirection: 'row', marginBottom: 4 },
+  calDow: { width: '14.285%', textAlign: 'center', fontSize: 10.5, color: PALETTE.mutedText, fontWeight: '600', paddingVertical: 4 },
+  calGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  calCell: { width: '14.285%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 13 },
+  calCellActive: { backgroundColor: PALETTE.primary },
+  calCellText: { fontSize: 13, color: PALETTE.text, fontWeight: '500' },
+  calDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: PALETTE.accent, marginTop: 2 },
+  calDateTitle: { fontSize: 15, fontWeight: '600', color: PALETTE.text },
+  calDateCount: { fontSize: 12.5, color: PALETTE.mutedText },
+
+  emptyCard: { backgroundColor: PALETTE.card, borderWidth: 1, borderColor: PALETTE.border, borderRadius: 22, padding: 40, alignItems: 'center' },
+  emptyText: { color: PALETTE.mutedText, fontSize: 13 },
+
+  fab: { position: 'absolute', right: 20, bottom: 100, width: 58, height: 58, borderRadius: 20, backgroundColor: PALETTE.primary, alignItems: 'center', justifyContent: 'center', shadowColor: PALETTE.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.45, shadowRadius: 14, elevation: 6 },
+  fabText: { color: '#fff', fontSize: 28, lineHeight: 32 },
+  attendanceBtn: { position: 'absolute', right: 88, bottom: 100, width: 58, height: 58, borderRadius: 20, backgroundColor: PALETTE.card, borderWidth: 1, borderColor: PALETTE.border, alignItems: 'center', justifyContent: 'center', elevation: 3 },
+  attendanceBtnText: { fontSize: 22, color: PALETTE.primary },
+
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(43,37,33,0.4)', justifyContent: 'flex-end' },
+  modalSheet: { backgroundColor: PALETTE.page, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 28, paddingBottom: 48, gap: 10 },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: PALETTE.text, marginBottom: 4 },
+  sectionLabel: { fontSize: 12, fontWeight: '600', color: PALETTE.mutedText, marginTop: 4 },
+  input: { backgroundColor: '#fff', borderWidth: 1, borderColor: PALETTE.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13, fontSize: 15, color: PALETTE.text },
+  datePicker: { backgroundColor: '#fff', borderWidth: 1, borderColor: PALETTE.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: { borderWidth: 1, borderColor: PALETTE.border, backgroundColor: PALETTE.card, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999 },
+  chipActive: { backgroundColor: PALETTE.primary, borderColor: PALETTE.primary },
+  chipText: { fontSize: 13, fontWeight: '600', color: PALETTE.text },
+  chipTextActive: { color: '#fff' },
+  saveBtn: { backgroundColor: PALETTE.primary, borderRadius: 16, paddingVertical: 15, alignItems: 'center', marginTop: 4 },
+  saveBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  cancelBtn: { alignItems: 'center', paddingVertical: 10 },
+  cancelBtnText: { color: PALETTE.mutedText, fontSize: 14 },
+
+  attendanceListOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', paddingHorizontal: 20 },
+  attendanceListSheet: { backgroundColor: PALETTE.card, borderRadius: 22, padding: 20, maxHeight: '70%' },
+  attendanceRow: { borderWidth: 1, borderColor: PALETTE.border, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, gap: 2 },
+
+  // 스타일 이름 충돌 방지용 빈 항목 (사용안함)
+  styles: {},
 });
