@@ -1,8 +1,17 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 import { PALETTE } from '@/constants/theme';
-
 import { createProduct, fetchProducts } from '@/services/supabase';
 import type { AppLanguage, Product, User } from '@/types';
 
@@ -13,87 +22,90 @@ interface ProductsScreenProps {
 
 const COPY: Record<AppLanguage, Record<string, string>> = {
   ko: {
-    loadError: '상품 목록을 불러오지 못했습니다.',
-    required: '상품명과 가격은 필수입니다.',
-    invalidPrice: '가격 형식이 올바르지 않습니다. 예: 300000 또는 300000.50',
-    invalidTotalSessions: '총 횟수는 0 이상의 숫자여야 합니다.',
-    invalidValidity: '유효기간 일수는 0 이상의 숫자여야 합니다.',
-    rlsError: 'RLS 정책 때문에 저장이 거부되었습니다. products 테이블 policy를 확인해주세요.',
-    createError: '상품 추가에 실패했습니다.',
-    title: '상품 관리',
-    subtitle: '선생님이 직접 상품을 등록하고 옵션(횟수/유효기간)을 선택할 수 있습니다.',
+    eyebrow: 'Catalog',
+    title: '이용권 상품',
+    subtitle: '스튜디오에서 판매하는 회원권을 관리해요',
     addProduct: '상품 추가',
     nameRequired: '상품명 (필수)',
     descOptional: '설명 (선택)',
     priceRequired: '가격 (필수)',
-    currencyCode: '통화 코드 (기본 EUR)',
+    currencyCode: '통화 (기본 EUR)',
     totalSessions: '총 횟수 (선택)',
     validityDays: '유효기간 일수 (선택)',
     saving: '저장 중...',
     saveProduct: '상품 저장',
-    registered: '등록된 상품',
-    none: '등록된 상품이 없습니다.',
-    sessions: '횟수',
+    cancel: '취소',
+    none: '등록된 상품이 없어요',
     unlimited: '무제한',
-    validity: '유효기간',
     noLimit: '제한 없음',
+    loadError: '상품 목록을 불러오지 못했습니다.',
+    required: '상품명과 가격은 필수입니다.',
+    invalidPrice: '가격 형식이 올바르지 않습니다.',
+    invalidTotalSessions: '총 횟수는 0 이상의 숫자여야 합니다.',
+    invalidValidity: '유효기간 일수는 0 이상의 숫자여야 합니다.',
+    rlsError: 'RLS 정책 오류. products 테이블 policy를 확인해주세요.',
+    createError: '상품 추가에 실패했습니다.',
+    daysValid: '일 유효',
   },
   en: {
-    loadError: 'Failed to load products.',
-    required: 'Product name and price are required.',
-    invalidPrice: 'Invalid price format. Example: 300000 or 300000.50',
-    invalidTotalSessions: 'Total sessions must be a number greater than or equal to 0.',
-    invalidValidity: 'Validity days must be a number greater than or equal to 0.',
-    rlsError: 'Save was blocked by RLS policy. Please check products table policy.',
-    createError: 'Failed to add product.',
-    title: 'Product Management',
-    subtitle: 'Teachers can register products and set options (sessions/validity).',
-    addProduct: 'Add Product',
+    eyebrow: 'Catalog',
+    title: 'Products',
+    subtitle: 'Manage membership passes for your studio',
+    addProduct: 'Add product',
     nameRequired: 'Product name (required)',
     descOptional: 'Description (optional)',
     priceRequired: 'Price (required)',
-    currencyCode: 'Currency code (default EUR)',
+    currencyCode: 'Currency (default EUR)',
     totalSessions: 'Total sessions (optional)',
     validityDays: 'Validity days (optional)',
     saving: 'Saving...',
-    saveProduct: 'Save Product',
-    registered: 'Registered Products',
-    none: 'No products registered.',
-    sessions: 'Sessions',
+    saveProduct: 'Save product',
+    cancel: 'Cancel',
+    none: 'No products yet',
     unlimited: 'Unlimited',
-    validity: 'Validity',
     noLimit: 'No limit',
+    loadError: 'Failed to load products.',
+    required: 'Name and price are required.',
+    invalidPrice: 'Invalid price format.',
+    invalidTotalSessions: 'Sessions must be ≥ 0.',
+    invalidValidity: 'Validity days must be ≥ 0.',
+    rlsError: 'Blocked by RLS policy.',
+    createError: 'Failed to add product.',
+    daysValid: 'd valid',
   },
   fr: {
-    loadError: 'Impossible de charger les produits.',
-    required: 'Le nom du produit et le prix sont obligatoires.',
-    invalidPrice: 'Format de prix invalide. Exemple: 300000 ou 300000.50',
-    invalidTotalSessions: 'Le nombre total de seances doit etre superieur ou egal a 0.',
-    invalidValidity: 'Les jours de validite doivent etre superieurs ou egaux a 0.',
-    rlsError: 'Enregistrement bloque par la politique RLS. Verifiez la policy de la table products.',
-    createError: "Echec de l'ajout du produit.",
-    title: 'Gestion des produits',
-    subtitle: 'Les professeurs peuvent enregistrer des produits et definir des options (seances/validite).',
-    addProduct: 'Ajouter un produit',
+    eyebrow: 'Catalog',
+    title: 'Produits',
+    subtitle: 'Gérez les abonnements de votre studio',
+    addProduct: 'Ajouter',
     nameRequired: 'Nom du produit (obligatoire)',
     descOptional: 'Description (optionnel)',
     priceRequired: 'Prix (obligatoire)',
-    currencyCode: 'Code devise (EUR par defaut)',
-    totalSessions: 'Nombre total de seances (optionnel)',
-    validityDays: 'Jours de validite (optionnel)',
+    currencyCode: 'Devise (EUR par défaut)',
+    totalSessions: 'Séances totales (optionnel)',
+    validityDays: 'Jours de validité (optionnel)',
     saving: 'Enregistrement...',
-    saveProduct: 'Enregistrer le produit',
-    registered: 'Produits enregistres',
-    none: 'Aucun produit enregistre.',
-    sessions: 'Seances',
-    unlimited: 'Illimite',
-    validity: 'Validite',
+    saveProduct: 'Enregistrer',
+    cancel: 'Annuler',
+    none: 'Aucun produit',
+    unlimited: 'Illimité',
     noLimit: 'Sans limite',
+    loadError: 'Impossible de charger les produits.',
+    required: 'Nom et prix obligatoires.',
+    invalidPrice: 'Format de prix invalide.',
+    invalidTotalSessions: 'Séances doit être ≥ 0.',
+    invalidValidity: 'Jours de validité doit être ≥ 0.',
+    rlsError: 'Bloqué par la politique RLS.',
+    createError: "Échec de l'ajout.",
+    daysValid: 'j valide',
   },
 };
 
 function formatPrice(value: number, currency: string) {
-  return `${value.toLocaleString('ko-KR')} ${currency}`;
+  const symbols: Record<string, string> = { EUR: '€', KRW: '₩', GBP: '£', USD: '$' };
+  const sym = symbols[currency] ?? currency + ' ';
+  if (currency === 'KRW') return `${sym}${value.toLocaleString('ko-KR')}`;
+  return `${sym}${value}`;
 }
 
 export default function ProductsScreen({ user, language }: ProductsScreenProps) {
@@ -102,6 +114,7 @@ export default function ProductsScreen({ user, language }: ProductsScreenProps) 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -123,200 +136,227 @@ export default function ProductsScreen({ user, language }: ProductsScreenProps) 
     }
   }, [c.loadError]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useEffect(() => { void load(); }, [load]);
 
   const handleCreate = async () => {
-    if (!name || !price) {
-      setError(c.required);
-      return;
-    }
-
+    if (!name || !price) { setError(c.required); return; }
     const normalizedPrice = Number(price.replace(/,/g, '').trim());
-    if (!Number.isFinite(normalizedPrice) || normalizedPrice <= 0) {
-      setError(c.invalidPrice);
-      return;
-    }
+    if (!Number.isFinite(normalizedPrice) || normalizedPrice <= 0) { setError(c.invalidPrice); return; }
+    const parsedSessions = totalSessions ? Number(totalSessions.trim()) : undefined;
+    if (parsedSessions !== undefined && (!Number.isFinite(parsedSessions) || parsedSessions < 0)) { setError(c.invalidTotalSessions); return; }
+    const parsedValidity = validityDays ? Number(validityDays.trim()) : undefined;
+    if (parsedValidity !== undefined && (!Number.isFinite(parsedValidity) || parsedValidity < 0)) { setError(c.invalidValidity); return; }
 
-    const parsedTotalSessions = totalSessions ? Number(totalSessions.trim()) : undefined;
-    if (parsedTotalSessions !== undefined && (!Number.isFinite(parsedTotalSessions) || parsedTotalSessions < 0)) {
-      setError(c.invalidTotalSessions);
-      return;
-    }
-
-    const parsedValidityDays = validityDays ? Number(validityDays.trim()) : undefined;
-    if (parsedValidityDays !== undefined && (!Number.isFinite(parsedValidityDays) || parsedValidityDays < 0)) {
-      setError(c.invalidValidity);
-      return;
-    }
-
-    setSaving(true);
-    setError(null);
+    setSaving(true); setError(null);
     try {
-      await createProduct({
-        userId: user.id,
-        name,
-        description: description || undefined,
-        price: normalizedPrice,
-        currency: currency || 'EUR',
-        totalSessions: parsedTotalSessions,
-        validityDays: parsedValidityDays,
-      });
-      setName('');
-      setDescription('');
-      setPrice('');
-      setTotalSessions('');
-      setValidityDays('');
+      await createProduct({ userId: user.id, name, description: description || undefined, price: normalizedPrice, currency: currency || 'EUR', totalSessions: parsedSessions, validityDays: parsedValidity });
+      setName(''); setDescription(''); setPrice(''); setTotalSessions(''); setValidityDays('');
+      setModalVisible(false);
       await load();
     } catch (e) {
-      if (e && typeof e === 'object' && 'message' in e) {
-        const message = String((e as { message?: string }).message ?? '');
-        if (message.includes('row-level security') || message.includes('violates row-level security policy')) {
-          setError(c.rlsError);
-        } else {
-          setError(message || c.createError);
-        }
-      } else {
-        setError(c.createError);
-      }
+      const msg = e instanceof Error ? e.message : '';
+      setError(msg.includes('row-level security') ? c.rlsError : msg || c.createError);
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: PALETTE.page }}>
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
-        <View>
-          <Text style={{ fontSize: 18, fontWeight: '600', color: PALETTE.text }}>{c.title}</Text>
-          <Text style={{ color: PALETTE.mutedText, marginTop: 4 }}>
-            {c.subtitle}
-          </Text>
+    <SafeAreaView style={styles.safe}>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        {/* 헤더 */}
+        <View style={styles.header}>
+          <Text style={styles.eyebrow}>{c.eyebrow}</Text>
+          <Text style={styles.title}>{c.title}</Text>
+          <Text style={styles.subtitle}>{c.subtitle}</Text>
         </View>
 
-        <View style={{ gap: 8 }}>
-          <Text style={{ fontWeight: '600', color: PALETTE.text }}>{c.addProduct}</Text>
-          <TextInput
-            placeholder={c.nameRequired}
-            value={name}
-            onChangeText={setName}
-            style={{ borderWidth: 1, borderColor: PALETTE.border, borderRadius: 12, padding: 8 }}
-          />
-          <TextInput
-            placeholder={c.descOptional}
-            value={description}
-            onChangeText={setDescription}
-            style={{ borderWidth: 1, borderColor: PALETTE.border, borderRadius: 12, padding: 8 }}
-          />
-          <TextInput
-            placeholder={c.priceRequired}
-            keyboardType="decimal-pad"
-            value={price}
-            onChangeText={setPrice}
-            style={{ borderWidth: 1, borderColor: PALETTE.border, borderRadius: 12, padding: 8 }}
-          />
-          <TextInput
-            placeholder={c.currencyCode}
-            value={currency}
-            onChangeText={setCurrency}
-            autoCapitalize="characters"
-            style={{ borderWidth: 1, borderColor: PALETTE.border, borderRadius: 12, padding: 8 }}
-          />
-          <TextInput
-            placeholder={c.totalSessions}
-            keyboardType="number-pad"
-            value={totalSessions}
-            onChangeText={setTotalSessions}
-            style={{ borderWidth: 1, borderColor: PALETTE.border, borderRadius: 12, padding: 8 }}
-          />
-          <TextInput
-            placeholder={c.validityDays}
-            keyboardType="number-pad"
-            value={validityDays}
-            onChangeText={setValidityDays}
-            style={{ borderWidth: 1, borderColor: PALETTE.border, borderRadius: 12, padding: 8 }}
-          />
-          <Pressable
-            onPress={handleCreate}
-            disabled={saving}
-            style={({ pressed }) => ({
-              backgroundColor: PALETTE.primary,
-              borderRadius: 12,
-              paddingVertical: 12,
-              alignItems: 'center',
-              opacity: pressed ? 0.8 : 1,
-            })}
-          >
-            <Text style={{ color: '#fff' }}>{saving ? c.saving : c.saveProduct}</Text>
-          </Pressable>
-        </View>
+        {/* 로딩 */}
+        {loading && <ActivityIndicator color={PALETTE.primary} style={{ marginTop: 24 }} />}
+        {error && <Text style={styles.errorText}>{error}</Text>}
 
-        {error ? <Text style={{ color: PALETTE.dangerText }}>{error}</Text> : null}
-
-        <View style={{ gap: 8 }}>
-          <Text style={{ fontWeight: '600', color: PALETTE.text }}>{c.registered}</Text>
-          {loading ? <ActivityIndicator color={PALETTE.primary} /> : null}
-          {!loading && products.length === 0 ? <Text style={{ color: PALETTE.mutedText }}>{c.none}</Text> : null}
-
-          <View style={styles.productsGrid}>
-            {products.map((product) => (
-              <View key={product.id} style={styles.productCard}>
-                <Text style={styles.productName}>{product.name}</Text>
-                {product.description ? (
-                  <Text style={styles.productDescription} numberOfLines={2}>
-                    {product.description}
-                  </Text>
-                ) : null}
-                <Text style={styles.productPrice}>{formatPrice(product.price, product.currency)}</Text>
-                <Text style={styles.productMeta}>
-                  {c.sessions}: {product.total_sessions ?? c.unlimited}
-                </Text>
-                <Text style={styles.productMeta}>
-                  {c.validity}: {product.validity_days ?? c.noLimit}
-                </Text>
-              </View>
-            ))}
+        {/* 상품 카드 목록 */}
+        {!loading && products.length === 0 && (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyText}>{c.none}</Text>
           </View>
+        )}
+
+        <View style={styles.cardList}>
+          {products.map((p) => (
+            <View key={p.id} style={styles.card}>
+              <View style={styles.cardRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.cardName}>{p.name}</Text>
+                  {p.description ? <Text style={styles.cardDesc}>{p.description}</Text> : null}
+                </View>
+                <Text style={styles.cardPrice}>{formatPrice(p.price, p.currency)}</Text>
+              </View>
+              <View style={styles.pillRow}>
+                <View style={[styles.pill, styles.pillGreen]}>
+                  <Text style={[styles.pillText, styles.pillTextGreen]}>
+                    {p.total_sessions ? `${p.total_sessions}회` : c.unlimited}
+                  </Text>
+                </View>
+                {p.validity_days ? (
+                  <View style={[styles.pill, styles.pillPeach]}>
+                    <Text style={[styles.pillText, styles.pillTextPeach]}>{p.validity_days}{c.daysValid}</Text>
+                  </View>
+                ) : null}
+                <View style={[styles.pill, styles.pillGrey]}>
+                  <Text style={[styles.pillText, styles.pillTextGrey]}>{p.currency}</Text>
+                </View>
+              </View>
+            </View>
+          ))}
         </View>
       </ScrollView>
+
+      {/* FAB */}
+      <Pressable style={styles.fab} onPress={() => setModalVisible(true)}>
+        <Text style={styles.fabText}>+</Text>
+      </Pressable>
+
+      {/* 상품 추가 모달 */}
+      <Modal visible={modalVisible} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <Text style={styles.modalTitle}>{c.addProduct}</Text>
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            {[
+              { placeholder: c.nameRequired, value: name, onChange: setName, keyboard: 'default' as const },
+              { placeholder: c.descOptional, value: description, onChange: setDescription, keyboard: 'default' as const },
+              { placeholder: c.priceRequired, value: price, onChange: setPrice, keyboard: 'decimal-pad' as const },
+              { placeholder: c.currencyCode, value: currency, onChange: setCurrency, keyboard: 'default' as const },
+              { placeholder: c.totalSessions, value: totalSessions, onChange: setTotalSessions, keyboard: 'number-pad' as const },
+              { placeholder: c.validityDays, value: validityDays, onChange: setValidityDays, keyboard: 'number-pad' as const },
+            ].map((f, i) => (
+              <TextInput
+                key={i}
+                placeholder={f.placeholder}
+                placeholderTextColor={PALETTE.mutedText}
+                value={f.value}
+                onChangeText={f.onChange}
+                keyboardType={f.keyboard}
+                autoCapitalize={f.keyboard === 'default' && f.placeholder.includes('통화') ? 'characters' : 'none'}
+                style={styles.input}
+              />
+            ))}
+            <Pressable style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleCreate} disabled={saving}>
+              {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{c.saveProduct}</Text>}
+            </Pressable>
+            <Pressable style={styles.cancelBtn} onPress={() => { setModalVisible(false); setError(null); }}>
+              <Text style={styles.cancelBtnText}>{c.cancel}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  productsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: 12,
+  safe: { flex: 1, backgroundColor: PALETTE.page },
+  scroll: { paddingHorizontal: 22, paddingTop: 20, paddingBottom: 120 },
+
+  // 헤더
+  header: { marginBottom: 24 },
+  eyebrow: { fontSize: 13, color: PALETTE.accent, fontStyle: 'italic', marginBottom: 2 },
+  title: { fontSize: 30, fontWeight: '600', color: PALETTE.text, letterSpacing: -0.3 },
+  subtitle: { fontSize: 13.5, color: PALETTE.mutedText, marginTop: 4 },
+
+  // 카드
+  cardList: { gap: 12 },
+  card: {
+    backgroundColor: PALETTE.card,
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+    borderRadius: 22,
+    padding: 18,
+    shadowColor: PALETTE.ink,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
   },
-  productCard: {
-    width: '24%',
-    minHeight: 132,
-    padding: 12,
+  cardRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14 },
+  cardName: { fontSize: 15.5, fontWeight: '600', color: PALETTE.text },
+  cardDesc: { fontSize: 12.5, color: PALETTE.mutedText, marginTop: 2 },
+  cardPrice: { fontSize: 21, fontWeight: '600', color: PALETTE.primaryDark, fontFamily: 'serif' },
+
+  // 배지
+  pillRow: { flexDirection: 'row', gap: 7, flexWrap: 'wrap' },
+  pill: { paddingHorizontal: 11, paddingVertical: 5, borderRadius: 999 },
+  pillText: { fontSize: 11.5, fontWeight: '600' },
+  pillGreen: { backgroundColor: PALETTE.greenSoft },
+  pillTextGreen: { color: PALETTE.primaryDark },
+  pillPeach: { backgroundColor: PALETTE.accentSoft },
+  pillTextPeach: { color: '#E08B52' },
+  pillGrey: { backgroundColor: '#F1EBE3' },
+  pillTextGrey: { color: PALETTE.mutedText },
+
+  // FAB
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 100,
+    width: 58,
+    height: 58,
+    borderRadius: 20,
+    backgroundColor: PALETTE.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: PALETTE.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+    elevation: 6,
+  },
+  fabText: { color: '#fff', fontSize: 28, lineHeight: 32 },
+
+  // 빈 상태
+  emptyCard: {
+    backgroundColor: PALETTE.card,
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+    borderRadius: 22,
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyText: { color: PALETTE.mutedText, fontSize: 14 },
+
+  // 에러
+  errorText: { color: PALETTE.dangerText, fontSize: 13, marginBottom: 8 },
+
+  // 모달
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(43,37,33,0.4)', justifyContent: 'flex-end' },
+  modalSheet: {
+    backgroundColor: PALETTE.page,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 28,
+    paddingBottom: 48,
+    gap: 10,
+  },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: PALETTE.text, marginBottom: 4 },
+  input: {
+    backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: PALETTE.border,
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-    gap: 4,
-  },
-  productName: {
-    fontWeight: '700',
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    fontSize: 15,
     color: PALETTE.text,
   },
-  productDescription: {
-    color: PALETTE.mutedText,
-    fontSize: 12,
-  },
-  productPrice: {
+  saveBtn: {
+    backgroundColor: PALETTE.primary,
+    borderRadius: 16,
+    paddingVertical: 15,
+    alignItems: 'center',
     marginTop: 4,
-    fontWeight: '600',
-    color: PALETTE.text,
   },
-  productMeta: {
-    color: PALETTE.mutedText,
-    fontSize: 12,
-  },
+  saveBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  cancelBtn: { alignItems: 'center', paddingVertical: 10 },
+  cancelBtnText: { color: PALETTE.mutedText, fontSize: 14 },
 });
-

@@ -430,21 +430,31 @@ export default function MyPageScreen({ user, onLogout, onUserUpdate, language, o
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: PALETTE.page }}>
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 22, paddingTop: 20, paddingBottom: 48, gap: 16 }}>
+        {/* 헤더 */}
+        <View style={{ marginBottom: 8 }}>
+          <Text style={{ fontSize: 13, color: PALETTE.accent, fontStyle: 'italic', marginBottom: 2 }}>My Studio</Text>
+          <Text style={{ fontSize: 30, fontWeight: '600', color: PALETTE.text, letterSpacing: -0.3 }}>{c.title}</Text>
+          <Text style={{ fontSize: 13.5, color: PALETTE.mutedText, marginTop: 4 }}>{c.subtitle}</Text>
+        </View>
+
         <View
           style={{
             backgroundColor: PALETTE.card,
-            borderRadius: 16,
+            borderRadius: 22,
             borderWidth: 1,
             borderColor: PALETTE.border,
-            padding: 16,
+            padding: 18,
             gap: 8,
+            shadowColor: PALETTE.ink,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.06,
+            shadowRadius: 12,
+            elevation: 2,
           }}
         >
-          <Text style={{ fontSize: 24, fontWeight: '700', color: PALETTE.text }}>{c.title}</Text>
-          <Text style={{ color: PALETTE.mutedText, fontSize: 13 }}>{c.studioAccount}</Text>
+          <Text style={{ fontSize: 13, color: PALETTE.mutedText }}>{c.studioAccount}</Text>
           <Text style={{ color: PALETTE.text, fontWeight: '500' }}>{user.email}</Text>
-          <Text style={{ color: PALETTE.mutedText, marginTop: 2, lineHeight: 20 }}>{c.subtitle}</Text>
 
           <View style={{ marginTop: 8, gap: 8 }}>
             <Text style={{ color: PALETTE.text, fontWeight: '600' }}>{c.language}</Text>
@@ -492,11 +502,16 @@ export default function MyPageScreen({ user, onLogout, onUserUpdate, language, o
         <View
           style={{
             backgroundColor: PALETTE.card,
-            borderRadius: 16,
+            borderRadius: 22,
             borderWidth: 1,
             borderColor: PALETTE.border,
-            padding: 16,
+            padding: 18,
             gap: 12,
+            shadowColor: PALETTE.ink,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.06,
+            shadowRadius: 12,
+            elevation: 2,
           }}
         >
           <Text style={{ fontSize: 18, fontWeight: '700', color: PALETTE.text }}>{c.accountSettings}</Text>
@@ -691,11 +706,16 @@ export default function MyPageScreen({ user, onLogout, onUserUpdate, language, o
         <View
           style={{
             backgroundColor: PALETTE.card,
-            borderRadius: 16,
+            borderRadius: 22,
             borderWidth: 1,
             borderColor: PALETTE.border,
-            padding: 16,
+            padding: 18,
             gap: 10,
+            shadowColor: PALETTE.ink,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.06,
+            shadowRadius: 12,
+            elevation: 2,
           }}
         >
           <Text style={{ fontSize: 18, fontWeight: '700', color: PALETTE.text }}>{c.helpAndLegal}</Text>
@@ -773,7 +793,7 @@ export default function MyPageScreen({ user, onLogout, onUserUpdate, language, o
             padding: 16,
             borderWidth: 1,
             borderColor: PALETTE.border,
-            borderRadius: 14,
+            borderRadius: 22,
             gap: 8,
             backgroundColor: PALETTE.card,
           }}
@@ -797,7 +817,7 @@ export default function MyPageScreen({ user, onLogout, onUserUpdate, language, o
             backgroundColor: PALETTE.card,
             borderColor: PALETTE.border,
             borderWidth: 1,
-            borderRadius: 14,
+            borderRadius: 22,
             padding: 16,
           }}
         >
@@ -831,7 +851,7 @@ export default function MyPageScreen({ user, onLogout, onUserUpdate, language, o
             backgroundColor: PALETTE.card,
             borderColor: PALETTE.border,
             borderWidth: 1,
-            borderRadius: 14,
+            borderRadius: 22,
             padding: 16,
           }}
         >
